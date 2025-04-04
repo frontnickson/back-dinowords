@@ -113,11 +113,6 @@ app.put("/user", authenticateToken, (async (req: Request, res: Response) => {
   res.json({ message: "Данные пользователя успешно обновлены", user: { ...user, password: undefined } });
 }) as RequestHandler);
 
-// Маршрут для получения списка слов
-app.get("/words", (req: Request, res: Response) => {
-  res.json(words);
-});
-
 // Маршрут для получения списка пользователей (только для администратора)
 app.get("/users", authenticateToken, (async (req: Request, res: Response) => {
   // Проверяем, является ли пользователь администратором
@@ -215,6 +210,7 @@ app.get("/user/words", authenticateToken, (async (req: Request, res: Response) =
 
 // Маршрут для добавления изученных слов
 app.post("/user/words", authenticateToken, (async (req: Request, res: Response) => {
+  
   const user = users.find(user => user.id === req.user?.id);
   if (!user) return res.status(404).json({ message: "Пользователь не найден" });
 
@@ -243,5 +239,49 @@ app.post("/user/words", authenticateToken, (async (req: Request, res: Response) 
   });
 }) as RequestHandler);
 
-// Запуск сервера
+// Маршрут (эндпоинт) для получения всех данных пользователя
+app.get("/user/full", authenticateToken, (async (req: Request, res: Response) => {
+  // Ищем пользователя в массиве users по его ID (полученному из токена)
+  const user = users.find(user => user.id === req.user?.id);
+
+  // Если пользователя нет, отправляем ошибку
+  if (!user) return res.status(404).json({ message: "Пользователь не найден" });
+
+  // Если нашли, отправляем данные пользователя в ответе
+  res.json(user);
+}) as RequestHandler);
+
+// Маршрут (эндпоинт) для обновления данных пользователя
+app.put("/user/full", authenticateToken, (async (req: Request, res: Response) => {
+  // Получаем ID пользователя из токена
+  const userId = req.user?.id;
+
+  // Получаем новые данные из тела запроса
+  const { email, name, image, studiedWords, level, stressTime, translate, password } = req.body;
+
+  // Ищем пользователя в массиве по ID
+  const user = users.find(user => user.id === userId);
+
+  // Если пользователя нет, отправляем ошибку
+  if (!user) return res.status(404).json({ message: "Пользователь не найден" });
+
+  // Обновляем данные пользователя, если они были переданы в запросе
+  user.email = email ?? user.email;
+  user.name = name ?? user.name;
+  user.image = image ?? user.image;
+  user.studiedWords = studiedWords ?? user.studiedWords;
+  user.level = { ...user.level, ...level }; // Объединяем старые и новые значения уровня
+  user.stressTime = stressTime ?? user.stressTime;
+  user.translate = translate ?? user.translate;
+
+  // Если пользователь передал новый пароль, хешируем его и обновляем
+  if (password) {
+    user.password = await bcrypt.hash(password, 10);
+  }
+
+  // Отправляем обновленные данные обратно клиенту
+  res.json({ message: "Данные пользователя успешно обновлены", user });
+}) as RequestHandler);
+
+// Запускаем сервер на указанном порту
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
