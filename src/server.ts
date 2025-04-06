@@ -23,8 +23,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const PORT = process.env.PORT || 5001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 interface LevelState {
   easy: boolean;
