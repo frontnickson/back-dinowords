@@ -1,7 +1,6 @@
 import express, { Request, Response, RequestHandler, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { words } from './words';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
@@ -26,6 +25,10 @@ app.use(cors());
 const PORT = process.env.PORT;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET не определён");
+}
+
 interface LevelState {
   easy: boolean;
   middle: boolean;
@@ -36,6 +39,7 @@ interface WordState {
   word: string;
   translate: string;
   know: boolean;
+  imageLink: string;
 }
 
 interface UserState {
@@ -43,8 +47,12 @@ interface UserState {
   token: string;
   id: number;
   name: string;
+  age: number;
+  man: boolean;
+  woman: boolean
   image: string;
   studiedWords: WordState[];
+  studiedImage: WordState[];
   level: LevelState;
   stressTime: number;
   translate: boolean;
@@ -56,8 +64,12 @@ const initialState: UserState = {
   token: "",
   id: 0,
   name: "",
+  age: 0,
+  man: false,
+  woman: false,
   image: "",
   studiedWords: [],
+  studiedImage: [],
   level: {
       easy: false,
       middle: false,
@@ -96,7 +108,7 @@ app.get("/user", authenticateToken, (async (req: Request, res: Response) => {
 }) as RequestHandler);
 
 app.put("/user", authenticateToken, (async (req: Request, res: Response) => {
-  const { email, name, image, studiedWords, level, stressTime, translate } = req.body;
+  const { email, name, age, man, woman, image, studiedWords, level, stressTime, translate } = req.body;
   const userId = req.user?.id;
 
   const user = users.find(user => user.id === userId);
@@ -104,6 +116,9 @@ app.put("/user", authenticateToken, (async (req: Request, res: Response) => {
 
   user.email = email ?? user.email;
   user.name = name ?? user.name;
+  user.age = age ?? user.age;
+  user.man = man ?? user.man;
+  user.woman = woman ?? user.woman;
   user.image = image ?? user.image;
   user.studiedWords = studiedWords ?? user.studiedWords;
   user.level = { ...user.level, ...level };
@@ -126,6 +141,9 @@ app.get("/users", authenticateToken, (async (req: Request, res: Response) => {
     id: user.id,
     email: user.email,
     name: user.name,
+    age: user.age,
+    man: user.man,
+    woman: user.woman,
     image: user.image,
     studiedWords: user.studiedWords,
     level: user.level,
@@ -138,7 +156,7 @@ app.get("/users", authenticateToken, (async (req: Request, res: Response) => {
 
 // Маршрут для регистрации
 app.post("/register", (async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, age, man, woman } = req.body;
 
   // Проверяем, существует ли пользователь
   if (users.find(user => user.email === email)) {
@@ -154,8 +172,12 @@ app.post("/register", (async (req: Request, res: Response) => {
     email: email,
     password: hashedPassword,
     name: name,
+    age: age,
+    man: man,
+    woman: woman,
     image: "",
     studiedWords: [],
+    studiedImage: [],
     level: {
       easy: false,
       middle: false,
@@ -257,7 +279,7 @@ app.put("/user/full", authenticateToken, (async (req: Request, res: Response) =>
   const userId = req.user?.id;
 
   // Получаем новые данные из тела запроса
-  const { email, name, image, studiedWords, level, stressTime, translate, password } = req.body;
+  const { email, name, age, man, woman, image, studiedWords, level, stressTime, translate, password } = req.body;
 
   // Ищем пользователя в массиве по ID
   const user = users.find(user => user.id === userId);
@@ -268,6 +290,9 @@ app.put("/user/full", authenticateToken, (async (req: Request, res: Response) =>
   // Обновляем данные пользователя, если они были переданы в запросе
   user.email = email ?? user.email;
   user.name = name ?? user.name;
+  user.age = age ?? user.age;
+  user.man = man ?? user.man;
+  user.woman = woman ?? user.woman;
   user.image = image ?? user.image;
   user.studiedWords = studiedWords ?? user.studiedWords;
   user.level = { ...user.level, ...level }; // Объединяем старые и новые значения уровня
