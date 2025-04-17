@@ -288,16 +288,16 @@ app.put("/user/full", authenticateToken, (async (req: Request, res: Response) =>
   if (!user) return res.status(404).json({ message: "Пользователь не найден" });
 
   // Обновляем данные пользователя, если они были переданы в запросе
-  user.email = email ?? user.email;
-  user.name = name ?? user.name;
-  user.age = age ?? user.age;
-  user.man = man ?? user.man;
-  user.woman = woman ?? user.woman;
-  user.image = image ?? user.image;
-  user.studiedWords = studiedWords ?? user.studiedWords;
+  user.email = email;
+  user.name = name;
+  user.age = age;
+  user.man = man;
+  user.woman = woman;
+  user.image = image;
+  user.studiedWords = studiedWords;
   user.level = { ...user.level, ...level }; // Объединяем старые и новые значения уровня
-  user.stressTime = stressTime ?? user.stressTime;
-  user.translate = translate ?? user.translate;
+  user.stressTime = stressTime;
+  user.translate = translate;
 
   // Если пользователь передал новый пароль, хешируем его и обновляем
   if (password) {
